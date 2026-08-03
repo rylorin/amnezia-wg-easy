@@ -38,7 +38,6 @@ const {
 } = require('../config');
 
 module.exports = class WireGuard {
-
   async __buildConfig() {
     this.__configPromise = Promise.resolve().then(async () => {
       if (!WG_HOST) {
@@ -52,10 +51,21 @@ module.exports = class WireGuard {
         config = JSON.parse(config);
         debug('Configuration loaded.');
       } catch (err) {
-        const privateKey = await Util.exec('wg genkey');
-        const publicKey = await Util.exec(`echo ${privateKey} | wg pubkey`, {
-          log: 'echo ***hidden*** | wg pubkey',
-        });
+        let privateKey = await Util.exec('wg genkey');
+        let publicKey;
+        if (privateKey) {
+          publicKey = await Util.exec(`echo ${privateKey} | wg pubkey`, {
+            log: 'echo ***hidden*** | wg pubkey',
+          });
+        } else {
+          const { generateKeyPairSync } = require('node:crypto');
+          const keyPair = generateKeyPairSync('x25519');
+          const privDer = keyPair.privateKey.export({ type: 'pkcs8', format: 'der' });
+          const pubDer = keyPair.publicKey.export({ type: 'spki', format: 'der' });
+          privateKey = privDer.subarray(privDer.length - 32).toString('base64');
+          publicKey = pubDer.subarray(pubDer.length - 32).toString('base64');
+          debug('Keys generated via Node.js crypto fallback.');
+        }
         const address = WG_DEFAULT_ADDRESS.replace('x', '1');
 
         config = {
@@ -89,14 +99,17 @@ module.exports = class WireGuard {
       const config = await this.__buildConfig();
 
       await this.__saveConfig(config);
-      await Util.exec('wg-quick down wg0').catch(() => {});
-      await Util.exec('wg-quick up wg0').catch((err) => {
-        if (err && err.message && err.message.includes('Cannot find device "wg0"')) {
-          throw new Error('WireGuard exited with the error: Cannot find device "wg0"\nThis usually means that your host\'s kernel does not support WireGuard!');
-        }
+      if (process.env.NODE_ENV == 'production') await Util.exec('wg-quick down wg0').catch(() => {});
+      if (process.env.NODE_ENV == 'production')
+        await Util.exec('wg-quick up wg0').catch((err) => {
+          if (err && err.message && err.message.includes('Cannot find device "wg0"')) {
+            throw new Error(
+              'WireGuard exited with the error: Cannot find device "wg0"\nThis usually means that your host\'s kernel does not support WireGuard!',
+            );
+          }
 
-        throw err;
-      });
+          throw err;
+        });
       // await Util.exec(`iptables -t nat -A POSTROUTING -s ${WG_DEFAULT_ADDRESS.replace('x', '0')}/24 -o ' + WG_DEVICE + ' -j MASQUERADE`);
       // await Util.exec('iptables -A INPUT -p udp -m udp --dport 51820 -j ACCEPT');
       // await Util.exec('iptables -A FORWARD -i wg0 -j ACCEPT');
@@ -146,8 +159,7 @@ H4 = ${config.server.h4}
 # Client: ${client.name} (${clientId})
 [Peer]
 PublicKey = ${client.publicKey}
-${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
-}AllowedIPs = ${client.address}/32`;
+${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''}AllowedIPs = ${client.address}/32`;
     }
 
     debug('Config saving...');
@@ -161,9 +173,11 @@ ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
   }
 
   async __syncConfig() {
-    debug('Config syncing...');
-    await Util.exec('wg syncconf wg0 <(wg-quick strip wg0)');
-    debug('Config synced.');
+    if (process.env.NODE_ENV == 'production') {
+      debug('Config syncing...');
+      await Util.exec('wg syncconf wg0 <(wg-quick strip wg0)');
+      debug('Config synced.');
+    }
   }
 
   async getClients() {
@@ -176,9 +190,7 @@ ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
       publicKey: client.publicKey,
       createdAt: new Date(client.createdAt),
       updatedAt: new Date(client.updatedAt),
-      expiredAt: client.expiredAt !== null
-        ? new Date(client.expiredAt)
-        : null,
+      expiredAt: client.expiredAt !== null ? new Date(client.expiredAt) : null,
       allowedIPs: client.allowedIPs,
       oneTimeLink: client.oneTimeLink ?? null,
       oneTimeLinkExpiresAt: client.oneTimeLinkExpiresAt ?? null,
@@ -213,9 +225,7 @@ ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
         const client = clients.find((client) => client.publicKey === publicKey);
         if (!client) return;
 
-        client.latestHandshakeAt = latestHandshakeAt === '0'
-          ? null
-          : new Date(Number(`${latestHandshakeAt}000`));
+        client.latestHandshakeAt = latestHandshakeAt === '0' ? null : new Date(Number(`${latestHandshakeAt}000`));
         client.endpoint = endpoint === '(none)' ? null : endpoint;
         client.transferRx = Number(transferRx);
         client.transferTx = Number(transferTx);
@@ -257,8 +267,7 @@ H4 = ${config.server.h4}
 
 [Peer]
 PublicKey = ${config.server.publicKey}
-${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
-}AllowedIPs = ${WG_ALLOWED_IPS}
+${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''}AllowedIPs = ${WG_ALLOWED_IPS}
 PersistentKeepalive = ${WG_PERSISTENT_KEEPALIVE}
 Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
   }
@@ -433,7 +442,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
 
   // Shutdown wireguard
   async Shutdown() {
-    await Util.exec('wg-quick down wg0').catch(() => {});
+    if (process.env.NODE_ENV == 'production') await Util.exec('wg-quick down wg0').catch(() => {});
   }
 
   async cronJobEveryMinute() {
@@ -538,5 +547,4 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
       wireguard_connected_peers: Number(wireguardConnectedPeersCount),
     };
   }
-
 };

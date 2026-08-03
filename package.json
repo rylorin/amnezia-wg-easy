@@ -1,10 +1,58 @@
 {
-  "version": "1.0.1",
+  "name": "@rylorin/amnezia-wg-easy",
+  "version": "0.0.1",
+  "private": false,
+  "bin": {
+    "amnezia-wg-easy": "dist/server.js",
+    "wgpw": "dist/wgpw.mjs"
+  },
   "scripts": {
-    "sudobuild": "DOCKER_BUILDKIT=1 sudo docker build --tag wg-easy .",
-    "build": "DOCKER_BUILDKIT=1 docker build --tag wg-easy .",
-    "serve": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
-    "sudostart": "sudo docker run --env WG_HOST=0.0.0.0 --name wg-easy --cap-add=NET_ADMIN --cap-add=SYS_MODULE --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" --mount type=bind,source=\"$(pwd)\"/config,target=/etc/wireguard -p 51820:51820/udp -p 51821:51821/tcp wg-easy",
-    "start": "docker run --env WG_HOST=0.0.0.0 --name wg-easy --cap-add=NET_ADMIN --cap-add=SYS_MODULE --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" --mount type=bind,source=\"$(pwd)\"/config,target=/etc/wireguard -p 51820:51820/udp -p 51821:51821/tcp wg-easy"
-  }
+    "build": "tsc --project tsconfig.json",
+    "clean": "rm -rf dist",
+    "dev": "DEBUG=Server,WireGuard NODE_ENV=development node src/server.js",
+    "start": "node dist/server.js",
+    "serve": "DEBUG=Server,WireGuard npx nodemon src/server.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "prepublishOnly": "yarn build",
+    "lint": "eslint .",
+    "buildcss": "npx tailwindcss -i ./src/www/src/css/app.css -o ./src/www/css/app.css",
+    "docker-sudobuild": "DOCKER_BUILDKIT=1 sudo docker build --tag wg-easy .",
+    "docker-build": "DOCKER_BUILDKIT=1 docker build --tag wg-easy .",
+    "docker-serve": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
+    "docker-sudostart": "sudo docker run --env WG_HOST=0.0.0.0 --name wg-easy --cap-add=NET_ADMIN --cap-add=SYS_MODULE --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" --mount type=bind,source=\"$(pwd)\"/config,target=/etc/wireguard -p 51820:51820/udp -p 51821:51821/tcp wg-easy",
+    "docker-start": "docker run --env WG_HOST=0.0.0.0 --name wg-easy --cap-add=NET_ADMIN --cap-add=SYS_MODULE --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" --mount type=bind,source=\"$(pwd)\"/config,target=/etc/wireguard -p 51820:51820/udp -p 51821:51821/tcp wg-easy"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "src/www/*"
+    ]
+  },
+  "release": {
+    "version": "14"
+  },
+  "dependencies": {
+    "basic-auth": "^2.0.1",
+    "bcryptjs": "^2.4.3",
+    "crc-32": "^1.2.2",
+    "debug": "^4.3.7",
+    "dotenv": "^17.4.2",
+    "express-session": "^1.18.0",
+    "h3": "^1.12.0",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/forms": "^0.5.9",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "nodemon": "^3.1.4",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.65.0"
+  },
+  "engines": {
+    "node": ">=22.22.3"
+  },
+  "license": "CC BY-NC-SA 4.0"
 }
