@@ -7,6 +7,11 @@ require('./services/Server');
 
 const WireGuard = require('./services/WireGuard');
 
+process.on('unhandledRejection', (reason) => {
+  // eslint-disable-next-line no-console
+  console.error('Unhandled Rejection:', reason);
+});
+
 WireGuard.getConfig().catch((err) => {
   // eslint-disable-next-line no-console
   console.error(err);
@@ -28,4 +33,6 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', () => {
   // eslint-disable-next-line no-console
   console.log('SIGINT signal received.');
+  // eslint-disable-next-line no-process-exit
+  process.exit(0);
 });

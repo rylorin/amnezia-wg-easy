@@ -41,10 +41,14 @@ const {
   PROMETHEUS_METRICS_PASSWORD,
   DICEBEAR_TYPE,
   USE_GRAVATAR,
+  WG_HOST,
+  WG_PATH,
+  WG_PORT,
 } = require('../config');
 
 const requiresPassword = !!PASSWORD_HASH;
 const requiresPrometheusPassword = !!PROMETHEUS_METRICS_PASSWORD;
+const httpLog = debug.extend('HTTP');
 
 /**
  * Checks if `password` matches the PASSWORD_HASH.
@@ -73,7 +77,11 @@ const cronJobEveryMinute = async () => {
 module.exports = class Server {
 
   constructor() {
-    const app = createApp();
+    const app = createApp({
+      onError: (error, event) => {
+        debug(`Error ${event.method} ${event.path}: ${error.message}`);
+      },
+    });
     this.app = app;
 
     app.use(fromNodeMiddleware(expressSession({
@@ -81,6 +89,16 @@ module.exports = class Server {
       resave: true,
       saveUninitialized: true,
     })));
+
+    app.use(fromNodeMiddleware((req, res, next) => {
+      const start = Date.now();
+      const originalEnd = res.end.bind(res);
+      res.end = function (...args) {
+        httpLog(`${req.method} ${req.url} ${res.statusCode} ${Date.now() - start}ms`);
+        return originalEnd(...args);
+      };
+      next();
+    }));
 
     const router = createRouter();
     app.use(router);
@@ -90,6 +108,12 @@ module.exports = class Server {
         setHeader(event, 'Content-Type', 'application/json');
         return RELEASE;
       }))
+
+      .get('/api/health', defineEventHandler(() => ({
+        status: 'ok',
+        uptime: process.uptime(),
+        timestamp: Date.now(),
+      })))
 
       .get('/api/lang', defineEventHandler((event) => {
         setHeader(event, 'Content-Type', 'application/json');
@@ -407,7 +431,14 @@ module.exports = class Server {
       }));
 
     // Static assets
-    const publicDir = '/app/www';
+    const publicDir = (() => {
+      try {
+        require('node:fs').accessSync('/app/www', require('node:fs').constants.R_OK);
+        return '/app/www';
+      } catch {
+        return require('node:path').resolve(__dirname, '..', 'www');
+      }
+    })();
     app.use(
       defineEventHandler((event) => {
         return serveStatic(event, {
@@ -438,8 +469,15 @@ module.exports = class Server {
       }),
     );
 
-    createServer(toNodeListener(app)).listen(PORT, WEBUI_HOST);
-    debug(`Listening on http://${WEBUI_HOST}:${PORT}`);
+    createServer(toNodeListener(app)).listen(PORT, WEBUI_HOST, () => {
+      debug(`Listening on http://${WEBUI_HOST}:${PORT}`);
+      if (WG_HOST) {
+        debug(`WireGuard endpoint: ${WG_HOST}:${WG_PORT}`);
+      }
+      debug(`Config path: ${WG_PATH}`);
+      debug(`Auth: ${requiresPassword ? 'enabled' : 'disabled'}`);
+      debug(`Prometheus: ${ENABLE_PROMETHEUS_METRICS === 'true' ? 'enabled' : 'disabled'}`);
+    });
 
     cronJobEveryMinute();
   }

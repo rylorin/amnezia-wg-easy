@@ -19,5 +19,5 @@ export default tseslint.config(
       strict: 'warn',
     },
   },
-  { ignores: ['node_modules/*', 'build/*', '**/*.spec.ts', '*.config.mjs', 'src/www'] },
+  { ignores: ['node_modules/*', 'build/*', 'dist/*', '**/*.spec.ts', '*.config.mjs', 'src/www'] },
 );

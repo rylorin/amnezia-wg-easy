@@ -58,8 +58,7 @@ module.exports = class WireGuard {
             log: 'echo ***hidden*** | wg pubkey',
           });
         } else {
-          const { generateKeyPairSync } = require('node:crypto');
-          const keyPair = generateKeyPairSync('x25519');
+          const keyPair = crypto.generateKeyPairSync('x25519');
           const privDer = keyPair.privateKey.export({ type: 'pkcs8', format: 'der' });
           const pubDer = keyPair.publicKey.export({ type: 'spki', format: 'der' });
           privateKey = privDer.subarray(privDer.length - 32).toString('base64');
@@ -287,11 +286,24 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
 
     const config = await this.getConfig();
 
-    const privateKey = await Util.exec('wg genkey');
-    const publicKey = await Util.exec(`echo ${privateKey} | wg pubkey`, {
-      log: 'echo ***hidden*** | wg pubkey',
-    });
-    const preSharedKey = await Util.exec('wg genpsk');
+    let privateKey = await Util.exec('wg genkey');
+    let publicKey;
+    if (privateKey) {
+      publicKey = await Util.exec(`echo ${privateKey} | wg pubkey`, {
+        log: 'echo ***hidden*** | wg pubkey',
+      });
+    } else {
+      const keyPair = crypto.generateKeyPairSync('x25519');
+      const privDer = keyPair.privateKey.export({ type: 'pkcs8', format: 'der' });
+      const pubDer = keyPair.publicKey.export({ type: 'spki', format: 'der' });
+      privateKey = privDer.subarray(privDer.length - 32).toString('base64');
+      publicKey = pubDer.subarray(pubDer.length - 32).toString('base64');
+    }
+
+    let preSharedKey = await Util.exec('wg genpsk');
+    if (!preSharedKey) {
+      preSharedKey = crypto.randomBytes(32).toString('base64');
+    }
 
     // Calculate next IP
     let address;
@@ -334,6 +346,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
 
     await this.saveConfig();
 
+    debug(`Client created: ${name} (${id})`);
     return client;
   }
 
@@ -341,8 +354,10 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     const config = await this.getConfig();
 
     if (config.clients[clientId]) {
+      const name = config.clients[clientId].name;
       delete config.clients[clientId];
       await this.saveConfig();
+      debug(`Client deleted: ${name} (${clientId})`);
     }
   }
 
@@ -353,6 +368,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     client.updatedAt = new Date();
 
     await this.saveConfig();
+    debug(`Client enabled: ${client.name} (${clientId})`);
   }
 
   async generateOneTimeLink({ clientId }) {
@@ -362,6 +378,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     client.oneTimeLinkExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
     client.updatedAt = new Date();
     await this.saveConfig();
+    debug(`One-time link generated for client: ${client.name} (${clientId})`);
   }
 
   async eraseOneTimeLink({ clientId }) {
@@ -379,6 +396,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     client.updatedAt = new Date();
 
     await this.saveConfig();
+    debug(`Client disabled: ${client.name} (${clientId})`);
   }
 
   async updateClientName({ clientId, name }) {
@@ -388,6 +406,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     client.updatedAt = new Date();
 
     await this.saveConfig();
+    debug(`Client name updated: ${clientId} → ${name}`);
   }
 
   async updateClientAddress({ clientId, address }) {
@@ -473,8 +492,9 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
       }
     }
     if (needSaveConfig) {
-      await this.saveConfig();
-    }
+await this.saveConfig();
+    debug(`Client address updated: ${clientId} → ${address}`);
+  }
   }
 
   async getMetrics() {

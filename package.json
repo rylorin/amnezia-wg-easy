@@ -7,11 +7,11 @@
     "wgpw": "dist/wgpw.mjs"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.json",
+    "build": "tsc --project tsconfig.json && cp -r src/www dist/www",
     "clean": "rm -rf dist",
     "dev": "DEBUG=Server,WireGuard NODE_ENV=development node src/server.js",
     "start": "node dist/server.js",
-    "serve": "DEBUG=Server,WireGuard npx nodemon src/server.js",
+    "serve": "DEBUG=Server,Server:*,WireGuard npx nodemon src/server.js",
     "typecheck": "tsc -p tsconfig.json",
     "prepublishOnly": "yarn build",
     "lint": "eslint .",
@@ -54,5 +54,5 @@
   "engines": {
     "node": ">=22.22.3"
   },
-  "license": "CC BY-NC-SA 4.0"
+  "license": "CC-BY-NC-SA-4.0"
 }

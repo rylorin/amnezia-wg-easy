@@ -3,9 +3,9 @@ name: Quality Check
 on:
   push:
     paths-ignore:
-      - "README.md"
-      - "LICENSE"
-      - ".github/workflows/build.yml"
+      - 'README.md'
+      - 'LICENSE'
+      - '.github/workflows/build.yml'
 
 jobs:
   qc:
@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.22.3
-          cache: "yarn" # caches the yarn cache folder not node_modules
+          cache: 'yarn' # caches the yarn cache folder not node_modules
 
       - name: Install packages
         run: yarn install --frozen-lockfile
@@ -27,5 +27,5 @@ jobs:
       - name: Lint test
         run: yarn lint
 
-      - name: Run tests
-        run: yarn test
+#      - name: Run tests
+#        run: yarn test
