@@ -1,6 +1,6 @@
 {
   "name": "@rylorin/amnezia-wg-easy",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "private": false,
   "bin": {
     "amnezia-wg-easy": "dist/server.js",
@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc --project tsconfig.json && cp -r src/www dist/www",
     "clean": "rm -rf dist",
-    "dev": "DEBUG=Server,WireGuard NODE_ENV=development node src/server.js",
+    "dev": "DEBUG=Server,Server:*,WireGuard NODE_ENV=development node src/server.js",
     "start": "node dist/server.js",
     "serve": "DEBUG=Server,Server:*,WireGuard npx nodemon src/server.js",
     "typecheck": "tsc -p tsconfig.json",
@@ -52,7 +52,7 @@
     "typescript-eslint": "^8.65.0"
   },
   "engines": {
-    "node": ">=22.22.3"
+    "node": ">=21.7.2"
   },
   "license": "CC-BY-NC-SA-4.0"
 }

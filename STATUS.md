@@ -2,22 +2,24 @@
 
 ## État actuel
 
-- Projet en phase de reprise.
-- Objectif: fork propre + remaniement Node.js + migration TS progressive.
+- Phase 0 (audit) : faite
+- Phase 1 (packaging) : faite — package.json consolidé, dépendances à la racine, TypeScript installé, build produit dist/
+- Phase 2 (instrumentation) : faite — middleware HTTP log, bannière de démarrage, health endpoint, error handler, logs WireGuard
+- Phase 4 (Docker) : en cours — Dockerfile simplifié (base amneziawg-go, exécution via npx), docker-compose.yml mis à jour
 
 ## En cours
 
-- Définir le cadrage de travail.
-- Préparer les fichiers de pilotage.
-- Identifier les premières tâches à confier à l'agent.
+- Tests du Dockerfile par l'utilisateur
 
 ## Prochaines étapes
 
-- Créer le `package.json` cible.
-- Ajouter `tsconfig.json`.
-- Définir le premier lot de migration.
-- Mettre en place les scripts de vérification.
+- Phase 3 (TypeScript) : reportée — l'utilisateur reviendra avec les résultats des tests Docker
+- Vérifier la résolution de `publicDir` dans le contexte `npx`
 
 ## Blocages
 
-- Aucun bloquant formalisé à ce stade.
+- Aucun bloquant
+
+## Notes
+
+- `publicDir` dans `src/lib/Server.js` résout `path.resolve(__dirname, '..', 'www')` — à corriger en `resolve(__dirname, 'www')` si `www` est dans `dist/` (cas npx). Le fallback `/app/www` ne fonctionnera pas car npx n'installe pas dans `/app`.

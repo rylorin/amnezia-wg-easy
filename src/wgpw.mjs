@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 'use strict';
 
 // Import needed libraries
@@ -22,10 +24,10 @@ const comparePassword = async (password, hash) => {
   try {
     const match = await bcrypt.compare(password, hash);
     if (match) {
-    // eslint-disable-next-line no-console
+      // eslint-disable-next-line no-console
       console.log('Password matches the hash !');
     } else {
-    // eslint-disable-next-line no-console
+      // eslint-disable-next-line no-console
       console.log('Password does not match the hash.');
     }
   } catch (error) {

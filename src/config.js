@@ -19,6 +19,7 @@ module.exports.WG_PERSISTENT_KEEPALIVE = process.env.WG_PERSISTENT_KEEPALIVE || 
 module.exports.WG_DEFAULT_ADDRESS = process.env.WG_DEFAULT_ADDRESS || '10.8.0.x';
 module.exports.WG_DEFAULT_DNS = typeof process.env.WG_DEFAULT_DNS === 'string' ? process.env.WG_DEFAULT_DNS : '1.1.1.1';
 module.exports.WG_ALLOWED_IPS = process.env.WG_ALLOWED_IPS || '0.0.0.0/0, ::/0';
+module.exports.WG_INTERFACE = process.env.WG_INTERFACE || 'wg0';
 
 module.exports.WG_PRE_UP = process.env.WG_PRE_UP || '';
 module.exports.WG_POST_UP =
@@ -26,8 +27,8 @@ module.exports.WG_POST_UP =
   `
 iptables -t nat -A POSTROUTING -s ${module.exports.WG_DEFAULT_ADDRESS.replace('x', '0')}/24 -o ${module.exports.WG_DEVICE} -j MASQUERADE;
 iptables -A INPUT -p udp -m udp --dport ${module.exports.WG_PORT} -j ACCEPT;
-iptables -A FORWARD -i wg0 -j ACCEPT;
-iptables -A FORWARD -o wg0 -j ACCEPT;
+iptables -A FORWARD -i ${module.exports.WG_INTERFACE} -j ACCEPT;
+iptables -A FORWARD -o ${module.exports.WG_INTERFACE} -j ACCEPT;
 `
     .split('\n')
     .join(' ');
@@ -38,8 +39,8 @@ module.exports.WG_POST_DOWN =
   `
 iptables -t nat -D POSTROUTING -s ${module.exports.WG_DEFAULT_ADDRESS.replace('x', '0')}/24 -o ${module.exports.WG_DEVICE} -j MASQUERADE;
 iptables -D INPUT -p udp -m udp --dport ${module.exports.WG_PORT} -j ACCEPT;
-iptables -D FORWARD -i wg0 -j ACCEPT;
-iptables -D FORWARD -o wg0 -j ACCEPT;
+iptables -D FORWARD -i ${module.exports.WG_INTERFACE} -j ACCEPT;
+iptables -D FORWARD -o ${module.exports.WG_INTERFACE} -j ACCEPT;
 `
     .split('\n')
     .join(' ');
@@ -68,3 +69,11 @@ module.exports.H1 = process.env.H1 || getRandomHeader();
 module.exports.H2 = process.env.H2 || getRandomHeader();
 module.exports.H3 = process.env.H3 || getRandomHeader();
 module.exports.H4 = process.env.H4 || getRandomHeader();
+// AWG 2.0 fields
+module.exports.S3 = process.env.S3 || getRandomJunkSize();
+module.exports.S4 = process.env.S4 || getRandomJunkSize();
+module.exports.I1 = process.env.I1 || getRandomInitSize();
+module.exports.I2 = process.env.I2 || getRandomInitSize();
+module.exports.I3 = process.env.I3 || getRandomInitSize();
+module.exports.I4 = process.env.I4 || getRandomInitSize();
+module.exports.I5 = process.env.I5 || getRandomInitSize();

@@ -5,11 +5,11 @@ on:
     types: [created]
   push:
     branches:
-      - "main"
+      - 'master'
     paths-ignore:
-      - "README.md"
-      - "LICENSE"
-      - ".github/workflows/qc.yml"
+      - 'README.md'
+      - 'LICENSE'
+      - '.github/workflows/qc.yml'
 
 jobs:
   build-and-publish:
@@ -25,9 +25,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
-          registry-url: "https://registry.npmjs.org"
-          cache: "yarn" # caches the yarn cache folder not node_modules
+          node-version: '21'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'yarn' # caches the yarn cache folder not node_modules
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -39,11 +39,11 @@ jobs:
       #   run: yarn test
 
       # Automated Version Bump
-      - name: "Automated Version Bump"
+      - name: 'Automated Version Bump'
         if: github.event_name == 'push'
-        uses: "phips28/gh-action-bump-version@master"
+        uses: 'phips28/gh-action-bump-version@master'
         with:
-          tag-prefix: "v"
+          tag-prefix: 'v'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
