@@ -1,6 +1,6 @@
 {
   "name": "@rylorin/amnezia-wg-easy",
-  "version": "0.0.4",
+  "version": "0.0.7",
   "private": false,
   "bin": {
     "amnezia-wg-easy": "dist/server.js",
@@ -52,7 +52,7 @@
     "typescript-eslint": "^8.65.0"
   },
   "engines": {
-    "node": ">=21.7.2"
+    "node": ">=20.15.1"
   },
   "license": "CC-BY-NC-SA-4.0"
 }

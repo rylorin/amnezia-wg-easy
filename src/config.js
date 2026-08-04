@@ -32,7 +32,6 @@ iptables -A FORWARD -o ${module.exports.WG_INTERFACE} -j ACCEPT;
 `
     .split('\n')
     .join(' ');
-
 module.exports.WG_PRE_DOWN = process.env.WG_PRE_DOWN || '';
 module.exports.WG_POST_DOWN =
   process.env.WG_POST_DOWN ||
@@ -44,6 +43,7 @@ iptables -D FORWARD -o ${module.exports.WG_INTERFACE} -j ACCEPT;
 `
     .split('\n')
     .join(' ');
+
 module.exports.LANG = process.env.LANG || 'en';
 module.exports.UI_TRAFFIC_STATS = process.env.UI_TRAFFIC_STATS || 'false';
 module.exports.UI_CHART_TYPE = process.env.UI_CHART_TYPE || 0;
@@ -59,6 +59,7 @@ module.exports.USE_GRAVATAR = process.env.USE_GRAVATAR || false;
 const getRandomInt = (min, max) => min + Math.floor(Math.random() * (max - min));
 const getRandomJunkSize = () => getRandomInt(15, 150);
 const getRandomHeader = () => getRandomInt(1, 2_147_483_647);
+const getRandomInitSize = () => getRandomInt(1, 1280);
 
 module.exports.JC = process.env.JC || getRandomInt(3, 10);
 module.exports.JMIN = process.env.JMIN || 50;

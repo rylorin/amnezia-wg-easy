@@ -3,29 +3,26 @@ name: Deploy to docker hub
 on:
   push:
     branches:
-      - '*' 
-      - '!feature/**' 
+      - '*'
+      - '!feature/**'
       - '!hotfix/**'
       - '!bugfix/**'
       - '!dev'
     tags:
       - 'v*'
     paths-ignore:
-      - "README.md"
-      - "LICENSE"
-      - "docker-stack.yml"
-      - ".github/workflows/build-test.yml"
-      - "test/**"
+      - 'README.md'
+      - 'LICENSE'
+      - 'docker-stack.yml'
+      - '.github/workflows/build-test.yml'
+      - 'test/**'
   schedule:
-    - cron: "0 3 * * 0" # Runs at 03:00 AM (UTC) every Sunday
+    - cron: '0 3 * * 0' # Runs at 03:00 AM (UTC) every Sunday
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    strategy:
-      matrix:
-        IBG_VERSION: [stable, latest]
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
@@ -40,7 +37,5 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: ${{ github.repository }}:${{ matrix.IBG_VERSION }}
+          tags: ${{ github.repository }}:latest
           context: .
-          build-args: IBG_VERSION=${{ matrix.IBG_VERSION }}
-#          platforms: linux/amd64,linux/arm64v8

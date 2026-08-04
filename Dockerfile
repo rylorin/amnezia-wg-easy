@@ -5,7 +5,7 @@ RUN apk update && apk add --no-cache \
 #    dpkg \
     dumb-init \
 #    iptables \
-    nodejs-current \
+    nodejs \
     npm
 
 # Use iptables-legacy

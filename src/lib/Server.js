@@ -79,6 +79,7 @@ module.exports = class Server {
   constructor() {
     const app = createApp({
       onError: (error, event) => {
+        if (error.statusCode && error.statusCode < 500) return;
         debug(`Error ${event.method} ${event.path}: ${error.message}`);
       },
     });
@@ -98,9 +99,12 @@ module.exports = class Server {
     app.use(
       fromNodeMiddleware((req, res, next) => {
         const start = Date.now();
+        const remote = req.socket?.remoteAddress || 'unknown';
+        const host = req.headers?.host || '-';
+        httpLog(`→ ${req.method} ${req.url} [${remote}] host=${host}`);
         const originalEnd = res.end.bind(res);
         res.end = function (...args) {
-          httpLog(`${req.method} ${req.url} ${res.statusCode} ${Date.now() - start}ms`);
+          httpLog(`← ${req.method} ${req.url} ${res.statusCode} ${Date.now() - start}ms`);
           return originalEnd(...args);
         };
         next();
@@ -526,37 +530,58 @@ module.exports = class Server {
 
     // Static assets
     const publicDir = require('node:path').resolve(__dirname, '..', 'www');
+    debug(`Static files directory: ${publicDir}`);
     app.use(
-      defineEventHandler((event) => {
-        return serveStatic(event, {
-          getContents: (id) => {
-            return readFile(safePathJoin(publicDir, id));
-          },
-          getMeta: async (id) => {
-            const filePath = safePathJoin(publicDir, id);
+      defineEventHandler(async (event) => {
+        let served;
+        try {
+          served = await serveStatic(event, {
+            getContents: (id) => {
+              return readFile(safePathJoin(publicDir, id));
+            },
+            getMeta: async (id) => {
+              const filePath = safePathJoin(publicDir, id);
 
-            const stats = await stat(filePath).catch(() => {});
-            if (!stats || !stats.isFile()) {
-              return;
-            }
+              const stats = await stat(filePath).catch(() => {});
+              if (!stats || !stats.isFile()) {
+                httpLog(`file not found: ${filePath}`);
+                return;
+              }
 
-            if (id.endsWith('.html')) setHeader(event, 'Content-Type', 'text/html');
-            if (id.endsWith('.js')) setHeader(event, 'Content-Type', 'application/javascript');
-            if (id.endsWith('.json')) setHeader(event, 'Content-Type', 'application/json');
-            if (id.endsWith('.css')) setHeader(event, 'Content-Type', 'text/css');
-            if (id.endsWith('.png')) setHeader(event, 'Content-Type', 'image/png');
-            if (id.endsWith('.svg')) setHeader(event, 'Content-Type', 'image/svg+xml');
+              if (id.endsWith('.html')) setHeader(event, 'Content-Type', 'text/html');
+              if (id.endsWith('.js')) setHeader(event, 'Content-Type', 'application/javascript');
+              if (id.endsWith('.json')) setHeader(event, 'Content-Type', 'application/json');
+              if (id.endsWith('.css')) setHeader(event, 'Content-Type', 'text/css');
+              if (id.endsWith('.png')) setHeader(event, 'Content-Type', 'image/png');
+              if (id.endsWith('.svg')) setHeader(event, 'Content-Type', 'image/svg+xml');
 
-            return {
-              size: stats.size,
-              mtime: stats.mtimeMs,
-            };
-          },
-        });
+              return {
+                size: stats.size,
+                mtime: stats.mtimeMs,
+              };
+            },
+          });
+        } catch {
+          served = undefined;
+        }
+        if (served === undefined) {
+          event.node.res.statusCode = 404;
+          event.node.res.setHeader('Content-Type', 'text/html');
+          event.node.res.end('<!DOCTYPE html><html><head><title>404</title></head><body><h1>404</h1></body></html>');
+        }
       }),
     );
 
-    createServer(toNodeListener(app)).listen(PORT, WEBUI_HOST, () => {
+    const h3Listener = toNodeListener(app);
+    const server = createServer();
+    server.on('request', (req, res) => {
+      debug(`RAW ${req.method} ${req.url} from ${req.socket?.remoteAddress} host=${req.headers?.host || '-'}`);
+      h3Listener(req, res);
+    });
+    server.on('clientError', (err, socket) => {
+      debug(`RAW clientError: ${err.message}`);
+    });
+    server.listen(PORT, WEBUI_HOST, () => {
       debug(`Listening on http://${WEBUI_HOST}:${PORT}`);
       if (WG_HOST) {
         debug(`WireGuard endpoint: ${WG_HOST}:${WG_PORT}`);
