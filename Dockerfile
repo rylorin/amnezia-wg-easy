@@ -17,4 +17,4 @@ ENV NODE_ENV=production
 
 # Run Web UI
 WORKDIR /app
-CMD ["/usr/bin/dumb-init", "npx", "@rylorin/amnezia-wg-easy"]
+CMD ["/usr/bin/dumb-init", "npx", "-y", "@rylorin/amnezia-wg-easy"]

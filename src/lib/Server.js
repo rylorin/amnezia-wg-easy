@@ -578,8 +578,15 @@ module.exports = class Server {
       debug(`RAW ${req.method} ${req.url} from ${req.socket?.remoteAddress} host=${req.headers?.host || '-'}`);
       h3Listener(req, res);
     });
+    server.on('connection', (socket) => {
+      debug(`RAW connection from ${socket.remoteAddress}:${socket.remotePort}`);
+    });
     server.on('clientError', (err, socket) => {
-      debug(`RAW clientError: ${err.message}`);
+      debug(`RAW clientError: ${err.message} code=${err.code}`);
+      if (err.rawPacket) {
+        debug(`RAW rawPacket (hex): ${err.rawPacket.toString('hex')}`);
+        debug(`RAW rawPacket (utf8): ${err.rawPacket.toString('utf8')}`);
+      }
     });
     server.listen(PORT, WEBUI_HOST, () => {
       debug(`Listening on http://${WEBUI_HOST}:${PORT}`);

@@ -7,7 +7,7 @@
     "wgpw": "dist/wgpw.mjs"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.json && cp -r src/www dist/www",
+    "build": "tsc --project tsconfig.json && rm -rf dist/www && cp -r src/www dist/www",
     "clean": "rm -rf dist",
     "dev": "DEBUG=Server,Server:*,WireGuard NODE_ENV=development node src/server.js",
     "start": "node dist/server.js",
