@@ -2,25 +2,21 @@
 
 const bcrypt = require('bcryptjs');
 const crypto = require('node:crypto');
-const basicAuth = require('basic-auth');
 const { createServer } = require('node:http');
 const { stat, readFile } = require('node:fs/promises');
-const { resolve, sep } = require('node:path');
 
-const expressSession = require('express-session');
 const debug = require('debug')('Server');
 
 const {
-  createApp,
-  createError,
-  createRouter,
-  defineEventHandler,
-  fromNodeMiddleware,
+  H3,
+  HTTPError,
+  defineHandler: defineEventHandler,
   getRouterParam,
-  toNodeListener,
+  toNodeHandler,
   readBody,
   setHeader,
   serveStatic,
+  useSession,
 } = require('h3');
 
 const WireGuard = require('../services/WireGuard');
@@ -50,6 +46,20 @@ const {
 const requiresPassword = !!PASSWORD_HASH;
 const requiresPrometheusPassword = !!PROMETHEUS_METRICS_PASSWORD;
 const httpLog = debug.extend('HTTP');
+const createError = (options) => new HTTPError(options);
+const sessionOptions = {
+  name: `${WG_INTERFACE}.sid`,
+  password: crypto.randomBytes(32).toString('base64'),
+  cookie: {
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+  },
+};
+
+const getSession = (event, remember = false) => useSession(event, remember && MAX_AGE > 0
+  ? { ...sessionOptions, maxAge: MAX_AGE / 1000 }
+  : sessionOptions);
 
 /**
  * Checks if `password` matches the PASSWORD_HASH.
@@ -77,42 +87,24 @@ const cronJobEveryMinute = async () => {
 
 module.exports = class Server {
   constructor() {
-    const app = createApp({
+    debug(`Server v${RELEASE} starting`);
+    const app = new H3({
+      onRequest: (event) => {
+        const nodeRequest = event.runtime?.node?.req;
+        httpLog(`→ ${event.req.method} ${event.url.pathname} [${nodeRequest?.socket?.remoteAddress || 'unknown'}] host=${event.req.headers.get('host') || '-'}`);
+      },
+      onResponse: (response, event) => {
+        httpLog(`← ${event.req.method} ${event.url.pathname} ${response.status} ${response.headers.get('content-length') || '-'} bytes`);
+      },
       onError: (error, event) => {
         if (error.statusCode && error.statusCode < 500) return;
-        debug(`Error ${event.method} ${event.path}: ${error.message}`);
+        debug(`Error ${event.req.method} ${event.url.pathname}: ${error.message}`);
       },
     });
     this.app = app;
 
-    app.use(
-      fromNodeMiddleware(
-        expressSession({
-          secret: crypto.randomBytes(256).toString('hex'),
-          resave: true,
-          saveUninitialized: true,
-          name: `${WG_INTERFACE}.sid`,
-        }),
-      ),
-    );
-
-    app.use(
-      fromNodeMiddleware((req, res, next) => {
-        const start = Date.now();
-        const remote = req.socket?.remoteAddress || 'unknown';
-        const host = req.headers?.host || '-';
-        httpLog(`→ ${req.method} ${req.url} [${remote}] host=${host}`);
-        const originalEnd = res.end.bind(res);
-        res.end = function (...args) {
-          httpLog(`← ${req.method} ${req.url} ${res.statusCode} ${Date.now() - start}ms`);
-          return originalEnd(...args);
-        };
-        next();
-      }),
-    );
-
-    const router = createRouter();
-    app.use(router);
+    const router = new H3();
+    app.use(router.handler);
 
     router
       .get(
@@ -202,10 +194,9 @@ module.exports = class Server {
       // Authentication
       .get(
         '/api/session',
-        defineEventHandler((event) => {
-          const authenticated = requiresPassword
-            ? !!(event.node.req.session && event.node.req.session.authenticated)
-            : true;
+        defineEventHandler(async (event) => {
+          const session = await getSession(event);
+          const authenticated = requiresPassword ? !!session.data.authenticated : true;
 
           return {
             requiresPassword,
@@ -255,56 +246,47 @@ module.exports = class Server {
             });
           }
 
-          if (MAX_AGE && remember) {
-            event.node.req.session.cookie.maxAge = MAX_AGE;
-          }
-          event.node.req.session.authenticated = true;
-          event.node.req.session.save();
+          const session = await getSession(event, remember);
+          await session.update({ authenticated: true });
 
-          debug(`New Session: ${event.node.req.session.id}`);
+          debug('New Session');
 
           return { success: true };
         }),
       );
 
     // WireGuard
-    app.use(
-      fromNodeMiddleware((req, res, next) => {
-        if (!requiresPassword || !req.url.startsWith('/api/')) {
-          return next();
+    app.use(async (event) => {
+      if (!requiresPassword || !event.url.pathname.startsWith('/api/')) return;
+
+      const session = await getSession(event);
+      if (session.data.authenticated) return;
+
+      const authorization = event.req.headers.get('authorization');
+      if (authorization) {
+        let password = authorization;
+        if (authorization.startsWith('Basic ')) {
+          const decoded = Buffer.from(authorization.slice(6), 'base64').toString();
+          password = decoded.slice(decoded.indexOf(':') + 1);
         }
+        if (isPasswordValid(password, PASSWORD_HASH)) return;
+        throw createError({ status: 401, message: 'Incorrect Password' });
+      }
 
-        if (req.session && req.session.authenticated) {
-          return next();
-        }
+      throw createError({ status: 401, message: 'Not Logged In' });
+    });
 
-        if (req.url.startsWith('/api/') && req.headers['authorization']) {
-          if (isPasswordValid(req.headers['authorization'], PASSWORD_HASH)) {
-            return next();
-          }
-          return res.status(401).json({
-            error: 'Incorrect Password',
-          });
-        }
-
-        return res.status(401).json({
-          error: 'Not Logged In',
-        });
-      }),
-    );
-
-    const router2 = createRouter();
-    app.use(router2);
+    const router2 = new H3();
+    app.use(router2.handler);
 
     router2
       .delete(
         '/api/session',
-        defineEventHandler((event) => {
-          const sessionId = event.node.req.session.id;
+        defineEventHandler(async (event) => {
+          const session = await getSession(event);
+          await session.clear();
 
-          event.node.req.session.destroy();
-
-          debug(`Deleted Session: ${sessionId}`);
+          debug('Deleted Session');
           return { success: true };
         }),
       )
@@ -342,8 +324,7 @@ module.exports = class Server {
       .post(
         '/api/wireguard/client',
         defineEventHandler(async (event) => {
-          const { name } = await readBody(event);
-          const { expiredDate } = await readBody(event);
+          const { name, expiredDate } = await readBody(event);
           await WireGuard.createClient({ name, expiredDate });
           return { success: true };
         }),
@@ -432,55 +413,25 @@ module.exports = class Server {
         }),
       );
 
-    const safePathJoin = (base, target) => {
-      // Manage web root (edge case)
-      if (target === '/') {
-        return `${base}${sep}`;
-      }
-
-      // Prepend './' to prevent absolute paths
-      const targetPath = `.${sep}${target}`;
-
-      // Resolve the absolute path
-      const resolvedPath = resolve(base, targetPath);
-
-      // Check if resolvedPath is a subpath of base
-      if (resolvedPath.startsWith(`${base}${sep}`)) {
-        return resolvedPath;
-      }
-
-      throw createError({
-        status: 400,
-        message: 'Bad Request',
-      });
-    };
-
     // Check Prometheus credentials
-    app.use(
-      fromNodeMiddleware((req, res, next) => {
-        if (!requiresPrometheusPassword || !req.url.startsWith('/metrics')) {
-          return next();
-        }
-        const user = basicAuth(req);
-        if (!user) {
-          res.statusCode = 401;
-          return { error: 'Not Logged In' };
-        }
-        if (user.pass) {
-          if (isPasswordValid(user.pass, PROMETHEUS_METRICS_PASSWORD)) {
-            return next();
-          }
-          res.statusCode = 401;
-          return { error: 'Incorrect Password' };
-        }
-        res.statusCode = 401;
-        return { error: 'Not Logged In' };
-      }),
-    );
+    app.use(async (event) => {
+      if (!requiresPrometheusPassword || !event.url.pathname.startsWith('/metrics')) return;
+
+      const authorization = event.req.headers.get('authorization');
+      if (!authorization?.startsWith('Basic ')) {
+        throw createError({ status: 401, message: 'Not Logged In' });
+      }
+
+      const decoded = Buffer.from(authorization.slice(6), 'base64').toString();
+      const password = decoded.slice(decoded.indexOf(':') + 1);
+      if (!isPasswordValid(password, PROMETHEUS_METRICS_PASSWORD)) {
+        throw createError({ status: 401, message: 'Incorrect Password' });
+      }
+    });
 
     // Prometheus Metrics API
-    const routerPrometheusMetrics = createRouter();
-    app.use(routerPrometheusMetrics);
+    const routerPrometheusMetrics = new H3();
+    app.use(routerPrometheusMetrics.handler);
 
     // Prometheus Routes
     routerPrometheusMetrics
@@ -506,8 +457,8 @@ module.exports = class Server {
       );
 
     // backup_restore
-    const router3 = createRouter();
-    app.use(router3);
+    const router3 = new H3();
+    app.use(router3.handler);
 
     router3
       .get(
@@ -530,49 +481,33 @@ module.exports = class Server {
 
     // Static assets
     const publicDir = require('node:path').resolve(__dirname, '..', 'www');
+    const path = require('node:path');
     debug(`Static files directory: ${publicDir}`);
+
+    const safePathJoin = (target) => {
+      const filePath = path.resolve(publicDir, `.${path.sep}${target}`);
+      if (filePath !== publicDir && !filePath.startsWith(`${publicDir}${path.sep}`)) {
+        throw createError({ status: 403, message: 'Forbidden' });
+      }
+      return filePath;
+    };
+
     app.use(
-      defineEventHandler(async (event) => {
-        let served;
-        try {
-          served = await serveStatic(event, {
-            getContents: (id) => {
-              return readFile(safePathJoin(publicDir, id));
-            },
-            getMeta: async (id) => {
-              const filePath = safePathJoin(publicDir, id);
-
-              const stats = await stat(filePath).catch(() => {});
-              if (!stats || !stats.isFile()) {
-                httpLog(`file not found: ${filePath}`);
-                return;
-              }
-
-              if (id.endsWith('.html')) setHeader(event, 'Content-Type', 'text/html');
-              if (id.endsWith('.js')) setHeader(event, 'Content-Type', 'application/javascript');
-              if (id.endsWith('.json')) setHeader(event, 'Content-Type', 'application/json');
-              if (id.endsWith('.css')) setHeader(event, 'Content-Type', 'text/css');
-              if (id.endsWith('.png')) setHeader(event, 'Content-Type', 'image/png');
-              if (id.endsWith('.svg')) setHeader(event, 'Content-Type', 'image/svg+xml');
-
-              return {
-                size: stats.size,
-                mtime: stats.mtimeMs,
-              };
-            },
-          });
-        } catch {
-          served = undefined;
-        }
-        if (served === undefined) {
-          event.node.res.statusCode = 404;
-          event.node.res.setHeader('Content-Type', 'text/html');
-          event.node.res.end('<!DOCTYPE html><html><head><title>404</title></head><body><h1>404</h1></body></html>');
-        }
-      }),
+      defineEventHandler((event) => serveStatic(event, {
+        indexNames: ['/index.html'],
+        getContents: (id) => readFile(safePathJoin(id)).catch(() => undefined),
+        getMeta: async (id) => {
+          const stats = await stat(safePathJoin(id)).catch(() => undefined);
+          if (!stats?.isFile()) return undefined;
+          return {
+            size: stats.size,
+            mtime: stats.mtimeMs,
+          };
+        },
+      })),
     );
 
-    const h3Listener = toNodeListener(app);
+    const h3Listener = toNodeHandler(app);
     const server = createServer();
     server.on('request', (req, res) => {
       debug(`RAW ${req.method} ${req.url} from ${req.socket?.remoteAddress} host=${req.headers?.host || '-'}`);
@@ -581,9 +516,10 @@ module.exports = class Server {
     server.on('connection', (socket) => {
       debug(`RAW connection from ${socket.remoteAddress}:${socket.remotePort}`);
     });
-    server.on('clientError', (err, socket) => {
+    server.on('clientError', (err) => {
       debug(`RAW clientError: ${err.message} code=${err.code}`);
       if (err.rawPacket) {
+        debug(`RAW rawPacket: ${err.rawPacket.toString()}`);
         debug(`RAW rawPacket (hex): ${err.rawPacket.toString('hex')}`);
         debug(`RAW rawPacket (utf8): ${err.rawPacket.toString('utf8')}`);
       }

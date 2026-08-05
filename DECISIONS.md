@@ -46,8 +46,20 @@ Conserver Docker comme moyen de déploiement, mais avec une image simple.
 Motif:
 Réduire la dette de packaging et faciliter le diagnostic.
 
+### 5. Migration vers h3 v2 RC
+
+Date: 2026-08-05
+
+Décision:
+Migrer le serveur HTTP vers `h3@2.0.1-rc.26`, en utilisant l'API `H3`, les adaptateurs Node v2, les sessions h3 natives et `serveStatic` v2.
+
+Motif:
+Éliminer les incompatibilités observées avec h3 v1 et éviter de conserver des adaptations Node/Express qui contournent le modèle de réponse h3.
+
+Limite:
+La version h3 v2 utilisée est une release candidate. Les tests de non-régression doivent être réalisés avant de considérer cette décision comme définitive.
+
 ## À venir
 
-- Décisions sur le framework HTTP si un changement est nécessaire.
 - Décisions sur la structure des types partagés.
 - Décisions sur les limites du support Amnezia vs WireGuard brut.

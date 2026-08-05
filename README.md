@@ -10,7 +10,7 @@ You have found the easiest way to install & manage WireGuard on any Linux host!
 Built on [amnezia-wg-easy](https://github.com/w0rng/amnezia-wg-easy), this image swaps the base to `amneziavpn/amneziawg-go` and adds full AWG 2.0 obfuscation parameters (I1–I5, S3, S4) alongside the existing AWG 1.x fields (Jc, Jmin, Jmax, S1, S2, H1–H4).
 
 <p align="center">
-  <img src="./assets/screenshot.png" width="802" />
+  <img src="https://github.com/rylorin/amnezia-wg-easy/blob/17aeebbe9c5486b2b3bb082dfc657478a157a3d2/assets/screenshot.png" width="802" />
 </p>
 
 ## Features

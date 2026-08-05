@@ -1,8 +1,6 @@
 'use strict';
 
-const {
-  release: { version },
-} = require('../package.json');
+const { version } = require('../package.json');
 
 module.exports.RELEASE = version;
 module.exports.PORT = process.env.PORT || '51821';

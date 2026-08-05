@@ -10,12 +10,8 @@ on:
       - '!dev'
     tags:
       - 'v*'
-    paths-ignore:
-      - 'README.md'
-      - 'LICENSE'
-      - 'docker-stack.yml'
-      - '.github/workflows/build-test.yml'
-      - 'test/**'
+    paths:
+      - '.github/workflows/deploy-dockerhub.yml'
   schedule:
     - cron: '0 3 * * 0' # Runs at 03:00 AM (UTC) every Sunday
 
