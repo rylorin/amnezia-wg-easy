@@ -1,5 +1,3 @@
-'use strict';
+import { WireGuard } from '../lib/WireGuard.js';
 
-const WireGuard = require('../lib/WireGuard');
-
-module.exports = new WireGuard();
+export default new WireGuard();

@@ -1,33 +1,31 @@
-'use strict';
+// @ts-nocheck
+import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
+import { createServer } from 'node:http';
+import { stat, readFile } from 'node:fs/promises';
+import path from 'node:path';
 
-const bcrypt = require('bcryptjs');
-const crypto = require('node:crypto');
-const { createServer } = require('node:http');
-const { stat, readFile } = require('node:fs/promises');
+import debug from 'debug';
 
-const debug = require('debug')('Server');
-
-const {
+import {
   H3,
   HTTPError,
-  defineHandler: defineEventHandler,
+  defineHandler as defineEventHandler,
   getRouterParam,
   toNodeHandler,
   readBody,
   setHeader,
   serveStatic,
   useSession,
-} = require('h3');
+} from 'h3';
 
-const WireGuard = require('../services/WireGuard');
-
-const {
+import WireGuard from '../services/WireGuard.js';
+import {
   PORT,
   WEBUI_HOST,
   RELEASE,
   PASSWORD_HASH,
   MAX_AGE,
-  LANG,
   UI_TRAFFIC_STATS,
   UI_CHART_TYPE,
   WG_ENABLE_ONE_TIME_LINKS,
@@ -41,11 +39,12 @@ const {
   WG_PATH,
   WG_PORT,
   WG_INTERFACE,
-} = require('../config');
+} from '../config.js';
 
 const requiresPassword = !!PASSWORD_HASH;
 const requiresPrometheusPassword = !!PROMETHEUS_METRICS_PASSWORD;
-const httpLog = debug.extend('HTTP');
+const log = debug('Server');
+const httpLog = log.extend('HTTP');
 const createError = (options) => new HTTPError(options);
 const sessionOptions = {
   name: `${WG_INTERFACE}.sid`,
@@ -57,9 +56,8 @@ const sessionOptions = {
   },
 };
 
-const getSession = (event, remember = false) => useSession(event, remember && MAX_AGE > 0
-  ? { ...sessionOptions, maxAge: MAX_AGE / 1000 }
-  : sessionOptions);
+const getSession = (event, remember = false) =>
+  useSession(event, remember && MAX_AGE > 0 ? { ...sessionOptions, maxAge: MAX_AGE / 1000 } : sessionOptions);
 
 /**
  * Checks if `password` matches the PASSWORD_HASH.
@@ -85,20 +83,24 @@ const cronJobEveryMinute = async () => {
   setTimeout(cronJobEveryMinute, 60 * 1000);
 };
 
-module.exports = class Server {
+export class Server {
   constructor() {
-    debug(`Server v${RELEASE} starting`);
+    log(`Server v${RELEASE} starting`);
     const app = new H3({
       onRequest: (event) => {
         const nodeRequest = event.runtime?.node?.req;
-        httpLog(`→ ${event.req.method} ${event.url.pathname} [${nodeRequest?.socket?.remoteAddress || 'unknown'}] host=${event.req.headers.get('host') || '-'}`);
+        httpLog(
+          `→ ${event.req.method} ${event.url.pathname} [${nodeRequest?.socket?.remoteAddress || 'unknown'}] host=${event.req.headers.get('host') || '-'}`,
+        );
       },
       onResponse: (response, event) => {
-        httpLog(`← ${event.req.method} ${event.url.pathname} ${response.status} ${response.headers.get('content-length') || '-'} bytes`);
+        httpLog(
+          `← ${event.req.method} ${event.url.pathname} ${response.status} ${response.headers.get('content-length') || '-'} bytes`,
+        );
       },
       onError: (error, event) => {
         if (error.statusCode && error.statusCode < 500) return;
-        debug(`Error ${event.req.method} ${event.url.pathname}: ${error.message}`);
+        log(`Error ${event.req.method} ${event.url.pathname}: ${error.message}`);
       },
     });
     this.app = app;
@@ -109,10 +111,11 @@ module.exports = class Server {
     router
       .get(
         '/api/release',
-        defineEventHandler((event) => {
-          setHeader(event, 'Content-Type', 'application/json');
-          return RELEASE;
-        }),
+        defineEventHandler(() => ({
+          version: RELEASE,
+          uptime: process.uptime(),
+          timestamp: Date.now(),
+        })),
       )
 
       .get(
@@ -128,7 +131,7 @@ module.exports = class Server {
         '/api/lang',
         defineEventHandler((event) => {
           setHeader(event, 'Content-Type', 'application/json');
-          return `"${LANG}"`;
+          return 'en';
         }),
       )
 
@@ -249,7 +252,7 @@ module.exports = class Server {
           const session = await getSession(event, remember);
           await session.update({ authenticated: true });
 
-          debug('New Session');
+          log('New Session');
 
           return { success: true };
         }),
@@ -286,7 +289,7 @@ module.exports = class Server {
           const session = await getSession(event);
           await session.clear();
 
-          debug('Deleted Session');
+          log('Deleted Session');
           return { success: true };
         }),
       )
@@ -480,9 +483,8 @@ module.exports = class Server {
       );
 
     // Static assets
-    const publicDir = require('node:path').resolve(__dirname, '..', 'www');
-    const path = require('node:path');
-    debug(`Static files directory: ${publicDir}`);
+    const publicDir = path.resolve(new URL('..', import.meta.url).pathname, 'www');
+    log(`Static files directory: ${publicDir}`);
 
     const safePathJoin = (target) => {
       const filePath = path.resolve(publicDir, `.${path.sep}${target}`);
@@ -493,47 +495,50 @@ module.exports = class Server {
     };
 
     app.use(
-      defineEventHandler((event) => serveStatic(event, {
-        indexNames: ['/index.html'],
-        getContents: (id) => readFile(safePathJoin(id)).catch(() => undefined),
-        getMeta: async (id) => {
-          const stats = await stat(safePathJoin(id)).catch(() => undefined);
-          if (!stats?.isFile()) return undefined;
-          return {
-            size: stats.size,
-            mtime: stats.mtimeMs,
-          };
-        },
-      })),
+      defineEventHandler((event) =>
+        serveStatic(event, {
+          indexNames: ['/index.html'],
+          getContents: (id) => readFile(safePathJoin(id)).catch(() => undefined),
+          getMeta: async (id) => {
+            const stats = await stat(safePathJoin(id)).catch(() => undefined);
+            if (!stats?.isFile()) return undefined;
+            return {
+              size: stats.size,
+              mtime: stats.mtimeMs,
+            };
+          },
+        }),
+      ),
     );
 
     const h3Listener = toNodeHandler(app);
     const server = createServer();
     server.on('request', (req, res) => {
-      debug(`RAW ${req.method} ${req.url} from ${req.socket?.remoteAddress} host=${req.headers?.host || '-'}`);
+      log(`RAW ${req.method} ${req.url} from ${req.socket?.remoteAddress} host=${req.headers?.host || '-'}`);
       h3Listener(req, res);
     });
     server.on('connection', (socket) => {
-      debug(`RAW connection from ${socket.remoteAddress}:${socket.remotePort}`);
+      log(`RAW connection from ${socket.remoteAddress}:${socket.remotePort}`);
+      socket.setNoDelay(true);
     });
     server.on('clientError', (err) => {
-      debug(`RAW clientError: ${err.message} code=${err.code}`);
+      log(`RAW clientError: ${err.message} code=${err.code}`);
       if (err.rawPacket) {
-        debug(`RAW rawPacket: ${err.rawPacket.toString()}`);
-        debug(`RAW rawPacket (hex): ${err.rawPacket.toString('hex')}`);
-        debug(`RAW rawPacket (utf8): ${err.rawPacket.toString('utf8')}`);
+        log(`RAW rawPacket: ${err.rawPacket.toString()}`);
+        log(`RAW rawPacket (hex): ${err.rawPacket.toString('hex')}`);
+        log(`RAW rawPacket (utf8): ${err.rawPacket.toString('utf8')}`);
       }
     });
     server.listen(PORT, WEBUI_HOST, () => {
-      debug(`Listening on http://${WEBUI_HOST}:${PORT}`);
+      log(`Listening on http://${WEBUI_HOST}:${PORT}`);
       if (WG_HOST) {
-        debug(`WireGuard endpoint: ${WG_HOST}:${WG_PORT}`);
+        log(`WireGuard endpoint: ${WG_HOST}:${WG_PORT}`);
       }
-      debug(`Config path: ${WG_PATH}`);
-      debug(`Auth: ${requiresPassword ? 'enabled' : 'disabled'}`);
-      debug(`Prometheus: ${ENABLE_PROMETHEUS_METRICS === 'true' ? 'enabled' : 'disabled'}`);
+      log(`Config path: ${WG_PATH}`);
+      log(`Auth: ${requiresPassword ? 'enabled' : 'disabled'}`);
+      log(`Prometheus: ${ENABLE_PROMETHEUS_METRICS === 'true' ? 'enabled' : 'disabled'}`);
     });
 
     cronJobEveryMinute();
   }
-};
+}

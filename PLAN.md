@@ -28,8 +28,8 @@ Transformer le projet en une base Node.js maintenable, indépendante du packagin
 
 ## Phase 3 - TypeScript incrémental
 
-- [ ] Ajouter `tsconfig.json` avec coexistence JS/TS.
-- [ ] Commencer avec `allowJs: true`.
+- [x] Ajouter `tsconfig.json` avec coexistence JS/TS.
+- [x] Commencer avec `allowJs: true`.
 - [ ] Migrer les modules les plus simples en premier.
 - [ ] Introduire les types aux frontières du système.
 - [ ] Renforcer progressivement la configuration TypeScript.
@@ -37,7 +37,7 @@ Transformer le projet en une base Node.js maintenable, indépendante du packagin
 ## Phase 4 - Simplification du packaging
 
 - [x] Réduire le Dockerfile au strict nécessaire.
-- [ ] Préparer une exécution via Node standard.
+- [x] Préparer une exécution via Node standard.
 - [x] Garder une image Docker fine, simple et lisible.
 
 ## Phase 5 - Stabilisation

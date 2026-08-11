@@ -1,5 +1,3 @@
-'use strict';
+import { Server } from '../lib/Server.js';
 
-const Server = require('../lib/Server');
-
-module.exports = new Server();
+export default new Server();

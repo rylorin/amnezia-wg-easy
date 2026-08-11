@@ -1,17 +1,14 @@
 #!/usr/bin/env node
 
-'use strict';
-
-const dotenv = require('dotenv');
+import dotenv from 'dotenv';
 dotenv.config();
 
 if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = 'production';
 }
 
-require('./services/Server');
-
-const WireGuard = require('./services/WireGuard');
+import('./services/Server.js');
+import { default as WireGuard } from './services/WireGuard.js';
 
 process.on('unhandledRejection', (reason) => {
   // eslint-disable-next-line no-console

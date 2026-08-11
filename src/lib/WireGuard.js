@@ -1,16 +1,15 @@
-'use strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import debug from 'debug';
 
-const fs = require('node:fs/promises');
-const path = require('path');
-const debug = require('debug')('WireGuard');
-const crypto = require('node:crypto');
-const QRCode = require('qrcode');
-const CRC32 = require('crc-32');
+const log = debug('WireGuard');
+import crypto from 'node:crypto';
+import QRCode from 'qrcode';
+import CRC32 from 'crc-32';
 
-const Util = require('./Util');
-const ServerError = require('./ServerError');
-
-const {
+import { Util } from './Util.js';
+import { ServerError } from './ServerError.js';
+import {
   RELEASE,
   WG_PATH,
   WG_HOST,
@@ -44,21 +43,21 @@ const {
   I3,
   I4,
   I5,
-} = require('../config');
+} from '../config.js';
 
-module.exports = class WireGuard {
+export class WireGuard {
   async __buildConfig() {
     this.__configPromise = Promise.resolve().then(async () => {
       if (!WG_HOST) {
         throw new Error('WG_HOST Environment Variable Not Set!');
       }
 
-      debug('Loading configuration...');
+      log('Loading configuration...');
       let config;
       try {
         config = await fs.readFile(path.join(WG_PATH, `${WG_INTERFACE}.json`), 'utf8');
         config = JSON.parse(config);
-        debug('Configuration loaded.');
+        log('Configuration loaded.');
       } catch (err) {
         let privateKey = await Util.exec('wg genkey');
         let publicKey;
@@ -72,7 +71,7 @@ module.exports = class WireGuard {
           const pubDer = keyPair.publicKey.export({ type: 'spki', format: 'der' });
           privateKey = privDer.subarray(privDer.length - 32).toString('base64');
           publicKey = pubDer.subarray(pubDer.length - 32).toString('base64');
-          debug('Keys generated via Node.js crypto fallback.');
+          log('Keys generated via Node.js crypto fallback.');
         }
         const address = WG_DEFAULT_ADDRESS.replace('x', '1');
 
@@ -100,7 +99,7 @@ module.exports = class WireGuard {
           },
           clients: {},
         };
-        debug('Configuration generated.');
+        log('Configuration generated.');
       }
 
       return config;
@@ -161,12 +160,12 @@ Jmin = ${config.server.jmin}
 Jmax = ${config.server.jmax}
 S1 = ${config.server.s1}
 S2 = ${config.server.s2}
+S3 = ${config.server.s3}
+S4 = ${config.server.s4}
 H1 = ${config.server.h1}
 H2 = ${config.server.h2}
 H3 = ${config.server.h3}
 H4 = ${config.server.h4}
-S3 = ${config.server.s3}
-S4 = ${config.server.s4}
 I1 = ${config.server.i1}
 I2 = ${config.server.i2}
 I3 = ${config.server.i3}
@@ -184,21 +183,21 @@ PublicKey = ${client.publicKey}
 ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''}AllowedIPs = ${client.address}/32`;
     }
 
-    debug('Config saving...');
+    log('Config saving...');
     await fs.writeFile(path.join(WG_PATH, `${WG_INTERFACE}.json`), JSON.stringify(config, false, 2), {
       mode: 0o660,
     });
     await fs.writeFile(path.join(WG_PATH, `${WG_INTERFACE}.conf`), result, {
       mode: 0o600,
     });
-    debug('Config saved.');
+    log('Config saved.');
   }
 
   async __syncConfig() {
     if (process.env.NODE_ENV == 'production') {
-      debug('Config syncing...');
+      log('Config syncing...');
       await Util.exec(`wg syncconf ${WG_INTERFACE} <(wg-quick strip ${WG_INTERFACE})`);
-      debug('Config synced.');
+      log('Config synced.');
     }
   }
 
@@ -282,12 +281,12 @@ Jmin = ${config.server.jmin}
 Jmax = ${config.server.jmax}
 S1 = ${config.server.s1}
 S2 = ${config.server.s2}
+S3 = ${config.server.s3}
+S4 = ${config.server.s4}
 H1 = ${config.server.h1}
 H2 = ${config.server.h2}
 H3 = ${config.server.h3}
 H4 = ${config.server.h4}
-S3 = ${config.server.s3}
-S4 = ${config.server.s4}
 I1 = ${config.server.i1}
 I2 = ${config.server.i2}
 I3 = ${config.server.i3}
@@ -376,7 +375,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
 
     await this.saveConfig();
 
-    debug(`Client created: ${name} (${id})`);
+    log(`Client created: ${name} (${id})`);
     return client;
   }
 
@@ -387,7 +386,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
       const name = config.clients[clientId].name;
       delete config.clients[clientId];
       await this.saveConfig();
-      debug(`Client deleted: ${name} (${clientId})`);
+      log(`Client deleted: ${name} (${clientId})`);
     }
   }
 
@@ -398,7 +397,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     client.updatedAt = new Date();
 
     await this.saveConfig();
-    debug(`Client enabled: ${client.name} (${clientId})`);
+    log(`Client enabled: ${client.name} (${clientId})`);
   }
 
   async generateOneTimeLink({ clientId }) {
@@ -408,7 +407,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     client.oneTimeLinkExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
     client.updatedAt = new Date();
     await this.saveConfig();
-    debug(`One-time link generated for client: ${client.name} (${clientId})`);
+    log(`One-time link generated for client: ${client.name} (${clientId})`);
   }
 
   async eraseOneTimeLink({ clientId }) {
@@ -426,7 +425,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     client.updatedAt = new Date();
 
     await this.saveConfig();
-    debug(`Client disabled: ${client.name} (${clientId})`);
+    log(`Client disabled: ${client.name} (${clientId})`);
   }
 
   async updateClientName({ clientId, name }) {
@@ -436,7 +435,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     client.updatedAt = new Date();
 
     await this.saveConfig();
-    debug(`Client name updated: ${clientId} → ${name}`);
+    log(`Client name updated: ${clientId} → ${name}`);
   }
 
   async updateClientAddress({ clientId, address }) {
@@ -474,18 +473,18 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
   }
 
   async restoreConfiguration(config) {
-    debug('Starting configuration restore process.');
+    log('Starting configuration restore process.');
     const _config = JSON.parse(config);
     await this.__saveConfig(_config);
     await this.__reloadConfig();
-    debug('Configuration restore process completed.');
+    log('Configuration restore process completed.');
   }
 
   async backupConfiguration() {
-    debug('Starting configuration backup.');
+    log('Starting configuration backup.');
     const config = await this.getConfig();
     const backup = JSON.stringify(config, null, 2);
-    debug('Configuration backup completed.');
+    log('Configuration backup completed.');
     return backup;
   }
 
@@ -502,7 +501,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
       for (const client of Object.values(config.clients)) {
         if (client.enabled !== true) continue;
         if (client.expiredAt !== null && new Date() > new Date(client.expiredAt)) {
-          debug(`Client ${client.id} expired.`);
+          log(`Client ${client.id} expired.`);
           needSaveConfig = true;
           client.enabled = false;
           client.updatedAt = new Date();
@@ -513,7 +512,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     if (WG_ENABLE_ONE_TIME_LINKS === 'true') {
       for (const client of Object.values(config.clients)) {
         if (client.oneTimeLink !== null && new Date() > new Date(client.oneTimeLinkExpiresAt)) {
-          debug(`Client ${client.id} One Time Link expired.`);
+          log(`Client ${client.id} One Time Link expired.`);
           needSaveConfig = true;
           client.oneTimeLink = null;
           client.oneTimeLinkExpiresAt = null;
@@ -523,7 +522,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     }
     if (needSaveConfig) {
       await this.saveConfig();
-      debug(`Client address updated: ${clientId} → ${address}`);
+      log(`Client address updated: ${clientId} → ${address}`);
     }
   }
 
@@ -597,4 +596,4 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
       wireguard_connected_peers: Number(wireguardConnectedPeersCount),
     };
   }
-};
+}

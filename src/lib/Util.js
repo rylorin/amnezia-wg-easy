@@ -1,8 +1,6 @@
-'use strict';
+import childProcess from 'node:child_process';
 
-const childProcess = require('child_process');
-
-module.exports = class Util {
+export class Util {
 
   static isValidIPv4(str) {
     const blocks = str.split('.');

@@ -1,10 +1,10 @@
-const assert = require('node:assert/strict');
-const { mkdtemp, readFile, rm } = require('node:fs/promises');
-const { tmpdir } = require('node:os');
-const { join } = require('node:path');
-const { spawn } = require('node:child_process');
-const { setTimeout: delay } = require('node:timers/promises');
-const { test, before, after } = require('node:test');
+import assert from 'node:assert/strict';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawn } from 'node:child_process';
+import { setTimeout as delay } from 'node:timers/promises';
+import { test, before, after } from 'node:test';
 
 let baseUrl;
 let configPath;
