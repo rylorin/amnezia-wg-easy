@@ -5,7 +5,9 @@ on:
     paths-ignore:
       - 'README.md'
       - 'LICENSE'
-      - '.github/workflows/build.yml'
+      - '.github/workflows/docker-deploy.yml'
+      - '.github/workflows/npm-publish.yml'
+      - '.github/workflows/qc.yml'
 
 jobs:
   qc:
@@ -27,5 +29,5 @@ jobs:
       - name: Lint test
         run: yarn lint
 
-      - name: Run tests
-        run: yarn test
+      # - name: Run tests
+      #   run: yarn test

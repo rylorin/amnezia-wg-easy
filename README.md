@@ -3,7 +3,7 @@
 ![Version](https://img.shields.io/github/package-json/v/rylorin/amnezia-wg-easy)
 [![Publish](https://github.com/rylorin/amnezia-wg-easy/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/rylorin/amnezia-wg-easy/actions/workflows/npm-publish.yml)
 ![License](https://img.shields.io/badge/License%20CC%20BY%20NC%20SA%204.0-blue.svg)
-![Downloads](https://img.shields.io/npm/dt/amnezia-wg-easy.svg)
+![Downloads](https://img.shields.io/npm/dt/@rylorin/amnezia-wg-easy.svg)
 
 You have found the easiest way to install & manage WireGuard on any Linux host!
 
