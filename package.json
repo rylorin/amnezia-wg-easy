@@ -26,7 +26,8 @@
     "docker-build": "DOCKER_BUILDKIT=1 docker build --tag wg-easy .",
     "docker-serve": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
     "docker-sudostart": "sudo docker run --env WG_HOST=0.0.0.0 --name wg-easy --cap-add=NET_ADMIN --cap-add=SYS_MODULE --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" --mount type=bind,source=\"$(pwd)\"/config,target=/etc/wireguard -p 51820:51820/udp -p 51821:51821/tcp wg-easy",
-    "docker-start": "docker run --env WG_HOST=0.0.0.0 --name wg-easy --cap-add=NET_ADMIN --cap-add=SYS_MODULE --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" --mount type=bind,source=\"$(pwd)\"/config,target=/etc/wireguard -p 51820:51820/udp -p 51821:51821/tcp wg-easy"
+    "docker-start": "docker run --env WG_HOST=0.0.0.0 --name wg-easy --cap-add=NET_ADMIN --cap-add=SYS_MODULE --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" --mount type=bind,source=\"$(pwd)\"/config,target=/etc/wireguard -p 51820:51820/udp -p 51821:51821/tcp wg-easy",
+    "wgpw": "NODE_ENV=development node src/wgpw.mjs"
   },
   "nodemonConfig": {
     "ignore": [
@@ -51,6 +52,9 @@
     "tailwindcss": "^3.4.10",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.67.0"
+  },
+  "resolutions": {
+    "srvx": "0.12.4"
   },
   "engines": {
     "node": ">=20.15.1"

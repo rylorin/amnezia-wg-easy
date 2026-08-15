@@ -1162,10 +1162,10 @@ source-map-js@^1.2.1:
   resolved "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz"
   integrity sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==
 
-srvx@^0.12.4:
-  version "0.12.5"
-  resolved "https://registry.yarnpkg.com/srvx/-/srvx-0.12.5.tgz#917280d1d52b7f9e841e3252f733935a7522e0f6"
-  integrity sha512-IuvtDNQg5EIwv3c6dleyau7u8hCyGQ7D6+V/QM799Aud07z0wCUcurKLTRfyG33C8oUY+UWcVBFkfHMcbtmRLA==
+srvx@0.12.4, srvx@^0.12.4:
+  version "0.12.4"
+  resolved "https://registry.yarnpkg.com/srvx/-/srvx-0.12.4.tgz#028511feb483652e0675ed3b56718e0d34a81960"
+  integrity sha512-RixzFlMn3dvzDTpKIAXhXrqL4cy6vScNCP0VVwgVbUBU94o+DiXLsFnAZetbyKAEnK6Ox3hzHXWGsyv/Iibv7g==
 
 string-width@^4.1.0, string-width@^4.2.0:
   version "4.2.3"

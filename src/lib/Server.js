@@ -524,9 +524,9 @@ export class Server {
     server.on('clientError', (err) => {
       log(`RAW clientError: ${err.message} code=${err.code}`);
       if (err.rawPacket) {
-        log(`RAW rawPacket: ${err.rawPacket.toString()}`);
+        // log(`RAW rawPacket: ${err.rawPacket.toString()}`);
         log(`RAW rawPacket (hex): ${err.rawPacket.toString('hex')}`);
-        log(`RAW rawPacket (utf8): ${err.rawPacket.toString('utf8')}`);
+        // log(`RAW rawPacket (utf8): ${err.rawPacket.toString('utf8')}`);
       }
     });
     server.listen(PORT, WEBUI_HOST, () => {

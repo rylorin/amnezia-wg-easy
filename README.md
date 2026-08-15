@@ -76,7 +76,7 @@ To automatically install & run wg-easy, simply run:
   -e PORT=8080 \
   -e WG_PORT=51820 \
   -v ~/.amnezia-wg-easy:/etc/amnezia/amneziawg \
-  -p 443:443/udp \
+  -p 8443:8443/udp \
   -p 8080:8080/tcp \
   --cap-add=NET_ADMIN \
   --cap-add=SYS_MODULE \
@@ -93,8 +93,8 @@ To automatically install & run wg-easy, simply run:
 >
 > **Port quick-reference:**  
 > `PORT` (`8080/tcp`) is the **Web UI** — open it in your browser.  
-> `WG_PORT` (`443/udp`) is the **VPN tunnel** — peers connect here.  
-> `WG_CONFIG_PORT` only needs to be set if a firewall/NAT translates the external UDP port before it reaches the container (e.g. external `51825` → internal `443` → set `WG_CONFIG_PORT=51825`).
+> `WG_PORT` (`8443/udp`) is the **VPN tunnel** — peers connect here.  
+> `WG_CONFIG_PORT` only needs to be set if a firewall/NAT translates the external UDP port before it reaches the container (e.g. external `51825` → internal `8443` → set `WG_CONFIG_PORT=51825`).
 
 ### Start
 
@@ -164,7 +164,7 @@ services:
 | `WEBUI_HOST`                  | `0.0.0.0`                 | IP address the Web UI binds to.                                                                                                                                                                                                                                                                                        |
 | `PASSWORD_HASH`               | —                         | Bcrypt hash for Web UI login. If unset, no password is required.                                                                                                                                                                                                                                                       |
 | `WG_DEVICE`                   | `eth0`                    | Network interface traffic is masqueraded through.                                                                                                                                                                                                                                                                      |
-| `WG_PORT`                     | `443`                     | **VPN UDP port** — AmneziaWG listens on this port inside the container. Must match the right-hand side of your `ports` mapping (e.g. `"51820:51820/udp"`).                                                                                                                                                             |
+| `WG_PORT`                     | `8443`                    | **VPN UDP port** — AmneziaWG listens on this port inside the container. Must match the right-hand side of your `ports` mapping (e.g. `"51820:51820/udp"`).                                                                                                                                                             |
 | `WG_CONFIG_PORT`              | `WG_PORT`                 | **Client endpoint port** — written into downloaded client `.conf` files as the `Endpoint` port. Only set this when a firewall or NAT translates the external port before it reaches the container. Example: external port `51825` mapped to internal `51820` → set `WG_CONFIG_PORT=51825`. If unset, equals `WG_PORT`. |
 | `WG_MTU`                      | —                         | MTU for clients.                                                                                                                                                                                                                                                                                                       |
 | `WG_PERSISTENT_KEEPALIVE`     | `0`                       | Keepalive interval in seconds (`0` = disabled).                                                                                                                                                                                                                                                                        |
