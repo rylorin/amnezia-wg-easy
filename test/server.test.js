@@ -64,10 +64,51 @@ test('serves the root page and API health route', async () => {
   assert.equal((await health.json()).status, 'ok');
 });
 
-test('creates a client from a single JSON body read', async () => {
+test('serves public bootstrap API routes without a session', async () => {
+  for (const path of ['/api/release', '/api/lang', '/api/remember-me']) {
+    const response = await fetch(`${baseUrl}${path}`);
+    assert.equal(response.status, 200, `${path} should be public`);
+  }
+});
+
+const createSessionCookie = async () => {
+  const response = await fetch(`${baseUrl}/api/session`, {
+    headers: { cookie: '' },
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    requiresPassword: false,
+    authenticated: true,
+  });
+
+  const setCookie = response.headers.get('set-cookie');
+  assert.ok(setCookie, 'should set a session cookie');
+  return setCookie.split(';')[0];
+};
+
+test('rejects API mutations without a valid session', async () => {
   const response = await fetch(`${baseUrl}/api/wireguard/client`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'unauthorized-client' }),
+  });
+
+  assert.equal(response.status, 401);
+
+  const list = await fetch(`${baseUrl}/api/wireguard/client`);
+  assert.equal(list.status, 401);
+});
+
+test('creates a client with a valid session cookie', async () => {
+  const cookie = await createSessionCookie();
+
+  const response = await fetch(`${baseUrl}/api/wireguard/client`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie,
+    },
     body: JSON.stringify({ name: 'test-client' }),
   });
 
@@ -81,4 +122,17 @@ test('creates a client from a single JSON body read', async () => {
   assert.ok(client.privateKey);
   assert.ok(client.publicKey);
   assert.ok(client.preSharedKey);
+});
+
+test('lists clients with a valid session cookie but rejects without', async () => {
+  const cookie = await createSessionCookie();
+
+  const allowed = await fetch(`${baseUrl}/api/wireguard/client`, {
+    headers: { cookie },
+  });
+  assert.equal(allowed.status, 200);
+  assert.ok(Array.isArray(await allowed.json()));
+
+  const denied = await fetch(`${baseUrl}/api/wireguard/client`);
+  assert.equal(denied.status, 401);
 });

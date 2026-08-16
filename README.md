@@ -88,8 +88,7 @@ To automatically install & run wg-easy, simply run:
 ```
 
 > Replace `YOUR_SERVER_IP` with your public IP or hostname.  
-> Replace `YOUR_BCRYPT_HASH` with the hash generated in step 2.  
-> **Note:** Dollar signs in `PASSWORD_HASH` must be escaped as `$$` when set inline in `docker-compose.yml`. To avoid this, put the value in a `.env` file instead.
+> Replace `YOUR_BCRYPT_HASH` with the hash generated with the command `npx --yes --package=@rylorin/amnezia-wg-easy -- wgpw`.
 >
 > **Port quick-reference:**  
 > `PORT` (`8080/tcp`) is the **Web UI** — open it in your browser.  
@@ -153,6 +152,10 @@ services:
 
 > Each instance must also use a different `WG_DEFAULT_ADDRESS` subnet (e.g. `10.8.0.x` and `10.9.0.x`) to avoid routing conflicts.
 
+## API security
+
+API routes are restricted to authenticated administration sessions. The browser receives an `httpOnly` session cookie when the administration interface is opened without a password, or after a successful password login. Protected API calls require that cookie; direct calls without it are rejected. Bootstrap endpoints such as health and release information remain public, as do one-time client configuration links.
+
 ## Options
 
 | Env                           | Default                   | Description                                                                                                                                                                                                                                                                                                            |
@@ -162,7 +165,7 @@ services:
 | `PORT`                        | `8080`                    | TCP port for the Web UI.                                                                                                                                                                                                                                                                                               |
 | `WG_PATH`                     | `/etc/amnezia/amneziawg/` | Directory path where config files are stored                                                                                                                                                                                                                                                                           |
 | `WEBUI_HOST`                  | `0.0.0.0`                 | IP address the Web UI binds to.                                                                                                                                                                                                                                                                                        |
-| `PASSWORD_HASH`               | —                         | Bcrypt hash for Web UI login. If unset, no password is required.                                                                                                                                                                                                                                                       |
+| `PASSWORD_HASH`               | —                         | Bcrypt hash for Web UI login. If unset, login is not required, but API routes still require a session cookie.                                                                                                                                                                                                          |
 | `WG_DEVICE`                   | `eth0`                    | Network interface traffic is masqueraded through.                                                                                                                                                                                                                                                                      |
 | `WG_PORT`                     | `8443`                    | **VPN UDP port** — AmneziaWG listens on this port inside the container. Must match the right-hand side of your `ports` mapping (e.g. `"51820:51820/udp"`).                                                                                                                                                             |
 | `WG_CONFIG_PORT`              | `WG_PORT`                 | **Client endpoint port** — written into downloaded client `.conf` files as the `Endpoint` port. Only set this when a firewall or NAT translates the external port before it reaches the container. Example: external port `51825` mapped to internal `51820` → set `WG_CONFIG_PORT=51825`. If unset, equals `WG_PORT`. |

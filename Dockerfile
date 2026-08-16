@@ -2,7 +2,6 @@ FROM amneziavpn/amneziawg-go:latest
 
 # Install Linux packages
 RUN apk update && apk add --no-cache \
-#    dpkg \
     dumb-init \
     nodejs \
     npm

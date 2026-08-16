@@ -78,6 +78,20 @@ const isPasswordValid = (password, hash) => {
   return false;
 };
 
+const isPublicApiPath = (pathname) => [
+  '/api/release',
+  '/api/health',
+  '/api/lang',
+  '/api/remember-me',
+  '/api/ui-traffic-stats',
+  '/api/ui-chart-type',
+  '/api/wg-enable-one-time-links',
+  '/api/ui-sort-clients',
+  '/api/wg-enable-expire-time',
+  '/api/ui-avatar-settings',
+  '/api/session',
+].includes(pathname);
+
 const cronJobEveryMinute = async () => {
   await WireGuard.cronJobEveryMinute();
   setTimeout(cronJobEveryMinute, 60 * 1000);
@@ -201,6 +215,10 @@ export class Server {
           const session = await getSession(event);
           const authenticated = requiresPassword ? !!session.data.authenticated : true;
 
+          if (!requiresPassword && !session.data.authenticated) {
+            await session.update({ authenticated: true });
+          }
+
           return {
             requiresPassword,
             authenticated,
@@ -260,21 +278,12 @@ export class Server {
 
     // WireGuard
     app.use(async (event) => {
-      if (!requiresPassword || !event.url.pathname.startsWith('/api/')) return;
+      const pathname = event.url.pathname;
+      if (pathname === '/cnf' || pathname.startsWith('/cnf/')) return;
+      if (!pathname.startsWith('/api/') || isPublicApiPath(pathname)) return;
 
       const session = await getSession(event);
       if (session.data.authenticated) return;
-
-      const authorization = event.req.headers.get('authorization');
-      if (authorization) {
-        let password = authorization;
-        if (authorization.startsWith('Basic ')) {
-          const decoded = Buffer.from(authorization.slice(6), 'base64').toString();
-          password = decoded.slice(decoded.indexOf(':') + 1);
-        }
-        if (isPasswordValid(password, PASSWORD_HASH)) return;
-        throw createError({ status: 401, message: 'Incorrect Password' });
-      }
 
       throw createError({ status: 401, message: 'Not Logged In' });
     });
