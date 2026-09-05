@@ -1,4 +1,6 @@
-# AmnewziaWG Easy
+# AmneziaWG Easy
+
+A web admin interface for AmneziaWG — install the npm package on any OS to manage configs remotely, or use the Docker image for an all-in-one bundle with the VPN server included.
 
 ![Version](https://img.shields.io/github/package-json/v/rylorin/amnezia-wg-easy)
 [![Publish](https://github.com/rylorin/amnezia-wg-easy/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/rylorin/amnezia-wg-easy/actions/workflows/npm-publish.yml)

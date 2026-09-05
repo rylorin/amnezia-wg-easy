@@ -7,8 +7,8 @@ RUN apk update && apk add --no-cache \
     npm
 
 # Set Environment
-ENV DEBUG=Server,WireGuard
-ENV NODE_ENV=production
+ENV DEBUG=${DEBUG:-Server,WireGuard}
+ENV NODE_ENV=${NODE_ENV:-production}
 
 # Run Web UI
 WORKDIR /app
