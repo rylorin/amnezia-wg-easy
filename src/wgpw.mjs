@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-'use strict';
-
 // Import needed libraries
 import bcrypt from 'bcryptjs';
 import { Writable } from 'stream';
