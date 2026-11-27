@@ -7,7 +7,7 @@ const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
 
 const RELEASE = version;
-const PORT = process.env.PORT || '8080';
+const HTTP_PORT = process.env.HTTP_PORT || process.env.PORT || '8080';
 const WEBUI_HOST = process.env.WEBUI_HOST || '0.0.0.0';
 const PASSWORD_HASH = process.env.PASSWORD_HASH;
 const MAX_AGE = parseInt(process.env.MAX_AGE, 10) * 1000 * 60 || 0;
@@ -82,7 +82,7 @@ const I5 = process.env.I5 || getRandomInitSize();
 
 export {
   RELEASE,
-  PORT,
+  HTTP_PORT,
   WEBUI_HOST,
   PASSWORD_HASH,
   MAX_AGE,

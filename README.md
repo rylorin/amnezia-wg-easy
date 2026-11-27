@@ -75,7 +75,7 @@ To automatically install & run wg-easy, simply run:
   --name=amnezia-wg-easy \
   -e WG_HOST=<🚨YOUR_SERVER_IP> \
   -e PASSWORD_HASH=<🚨YOUR_ADMIN_PASSWORD_HASH> \
-  -e PORT=8080 \
+  -e HTTP_PORT=8080 \
   -e WG_PORT=51820 \
   -v ~/.amnezia-wg-easy:/etc/amnezia/amneziawg \
   -p 8443:8443/udp \
@@ -93,7 +93,7 @@ To automatically install & run wg-easy, simply run:
 > Replace `YOUR_BCRYPT_HASH` with the hash generated with the command `npx --yes --package=@rylorin/amnezia-wg-easy -- wgpw`.
 >
 > **Port quick-reference:**  
-> `PORT` (`8080/tcp`) is the **Web UI** — open it in your browser.  
+> `HTTP_PORT` (`8080/tcp`) is the **Web UI** — open it in your browser.  
 > `WG_PORT` (`8443/udp`) is the **VPN tunnel** — peers connect here.  
 > `WG_CONFIG_PORT` only needs to be set if a firewall/NAT translates the external UDP port before it reaches the container (e.g. external `51825` → internal `8443` → set `WG_CONFIG_PORT=51825`).
 
@@ -114,7 +114,7 @@ docker compose up -d
 
 ### Running multiple instances
 
-Each instance needs a unique `WG_INTERFACE`, `WG_PORT`, `WG_CONFIG_PORT`, and `PORT`. Everything else — config files, iptables rules, and the Web UI session cookie — is derived automatically from `WG_INTERFACE`.
+Each instance needs a unique `WG_INTERFACE`, `WG_PORT`, `WG_CONFIG_PORT`, and `HTTP_PORT`. Everything else — config files, iptables rules, and the Web UI session cookie — is derived automatically from `WG_INTERFACE`.
 
 ```yaml
 services:
@@ -125,7 +125,7 @@ services:
       - WG_INTERFACE=awg0
       - WG_PORT=51820
       - WG_CONFIG_PORT=51820
-      - PORT=51821
+      - HTTP_PORT=51821
       - PASSWORD_HASH=YOUR_BCRYPT_HASH
     volumes:
       - data:/etc/amnezia/amneziawg
@@ -141,7 +141,7 @@ services:
       - WG_INTERFACE=awg1
       - WG_PORT=51830
       - WG_CONFIG_PORT=51830
-      - PORT=51831
+      - HTTP_PORT=51831
       - WG_DEFAULT_ADDRESS=10.9.0.x
       - PASSWORD_HASH=YOUR_BCRYPT_HASH
     volumes:
@@ -164,7 +164,7 @@ API routes are restricted to authenticated administration sessions. The browser 
 | ----------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `WG_HOST`                     | —                         | Public IP or hostname of your VPN server. **Required.**                                                                                                                                                                                                                                                                |
 | `WG_INTERFACE`                | `wg0`                     | Kernel network interface name. Change this when running multiple instances on the same host to avoid conflicts (e.g. `awg1`). Also determines the session cookie name.                                                                                                                                                 |
-| `PORT`                        | `8080`                    | TCP port for the Web UI.                                                                                                                                                                                                                                                                                               |
+| `HTTP_PORT` (`PORT` legacy)   | `8080`                    | TCP port for the Web UI. (`PORT` is still accepted for compatibility.)                                                                                                                                                                                                                                                |
 | `WG_PATH`                     | `/etc/amnezia/amneziawg/` | Directory path where config files are stored                                                                                                                                                                                                                                                                           |
 | `WEBUI_HOST`                  | `0.0.0.0`                 | IP address the Web UI binds to.                                                                                                                                                                                                                                                                                        |
 | `PASSWORD_HASH`               | —                         | Bcrypt hash for Web UI login. If unset, login is not required, but API routes still require a session cookie.                                                                                                                                                                                                          |

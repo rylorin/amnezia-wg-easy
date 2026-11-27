@@ -21,7 +21,7 @@ import {
 
 import WireGuard from '../services/WireGuard.js';
 import {
-  PORT,
+  HTTP_PORT,
   WEBUI_HOST,
   RELEASE,
   PASSWORD_HASH,
@@ -538,8 +538,8 @@ export class Server {
         // log(`RAW rawPacket (utf8): ${err.rawPacket.toString('utf8')}`);
       }
     });
-    server.listen(PORT, WEBUI_HOST, () => {
-      log(`Listening on http://${WEBUI_HOST}:${PORT}`);
+    server.listen(HTTP_PORT, WEBUI_HOST, () => {
+      log(`Listening on http://${WEBUI_HOST}:${HTTP_PORT}`);
       if (WG_HOST) {
         log(`WireGuard endpoint: ${WG_HOST}:${WG_PORT}`);
       }

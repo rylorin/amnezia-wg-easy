@@ -34,6 +34,7 @@ before(async () => {
       ...process.env,
       DEBUG: '',
       NODE_ENV: 'development',
+      HTTP_PORT: String(port),
       PORT: String(port),
       WG_HOST: 'localhost',
       WG_PATH: configPath,
