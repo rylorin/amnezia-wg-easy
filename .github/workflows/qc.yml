@@ -26,11 +26,14 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
+      - name: Prepare Yarn
+        run: corepack prepare yarn@4.19.0 --activate
+
       - name: Install packages
-        run: yarn install --immutable
+        run: corepack yarn install --immutable
 
       - name: Lint test
-        run: yarn lint
+        run: corepack yarn lint
 
       # - name: Run tests
-      #   run: yarn test
+      #   run: corepack yarn test

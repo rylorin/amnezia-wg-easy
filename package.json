@@ -14,9 +14,9 @@
   "scripts": {
     "build": "tsc --project tsconfig.json && rm -rf dist/www && cp -r src/www dist/www",
     "clean": "rm -rf dist",
-    "dev": "DEBUG=Server,Server:*,WireGuard NODE_ENV=development node src/server.js",
+    "dev": "DEBUG='Server,Server:*,WireGuard' NODE_ENV=development node src/server.js",
     "start": "node dist/server.js",
-    "serve": "DEBUG=Server,Server:*,WireGuard npx nodemon src/server.js",
+    "serve": "DEBUG='Server,Server:*,WireGuard' npx nodemon src/server.js",
     "typecheck": "tsc -p tsconfig.json",
     "test": "yarn build && node --test test/*.test.js",
     "prepublishOnly": "yarn build",
