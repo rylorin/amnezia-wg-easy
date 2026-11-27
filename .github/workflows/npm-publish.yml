@@ -9,7 +9,7 @@ on:
     paths-ignore:
       - 'README.md'
       - 'LICENSE'
-      - '.github/workflows/docker-deploy.yml'
+      - '.github/workflows/deploy-dockerhub.yml'
       - '.github/workflows/qc.yml'
 
 jobs:

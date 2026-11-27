@@ -1,15 +1,10 @@
 name: Deploy to docker hub
 
 on:
+  workflow_dispatch:
   push:
     branches:
-      - '*'
-      - '!feature/**'
-      - '!hotfix/**'
-      - '!bugfix/**'
-      - '!dev'
-    tags:
-      - 'v*'
+      - master
     paths:
       - '.github/workflows/deploy-dockerhub.yml'
       - 'Dockerfile'
@@ -22,7 +17,13 @@ jobs:
     timeout-minutes: 18
     steps:
       - name: Checkout project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Set environment variables
         run: echo RELEASE=$(cat ./package.json | jq -r .version) >> $GITHUB_ENV
@@ -37,5 +38,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
+          platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8
           tags: ${{ github.repository }}:latest,${{ github.repository }}:${{ env.RELEASE }}
           context: .
