@@ -1,8 +1,7 @@
 {
   "type": "module",
   "name": "@rylorin/amnezia-wg-easy",
-  "version": "0.0.19",
-  "private": false,
+  "version": "0.0.20",
   "bin": {
     "amnezia-wg-easy": "dist/server.js",
     "wgpw": "dist/wgpw.mjs"
