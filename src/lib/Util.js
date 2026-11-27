@@ -16,7 +16,7 @@ export class Util {
   }
 
   static promisify(fn) {
-    // eslint-disable-next-line func-names
+     
     return function(req, res) {
       Promise.resolve().then(async () => fn(req, res))
         .then((result) => {

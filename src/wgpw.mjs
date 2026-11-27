@@ -76,7 +76,7 @@ const readStdinPassword = () => {
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error(error);
-    // eslint-disable-next-line no-process-exit
+     
     process.exit(1);
   }
 })();

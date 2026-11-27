@@ -23,8 +23,11 @@ jobs:
           node-version: 24
           cache: 'yarn' # caches the yarn cache folder not node_modules
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Install packages
-        run: yarn install --frozen-lockfile
+        run: yarn install --immutable
 
       - name: Lint test
         run: yarn lint

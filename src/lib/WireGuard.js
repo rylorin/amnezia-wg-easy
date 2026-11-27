@@ -58,7 +58,7 @@ export class WireGuard {
         config = await fs.readFile(path.join(WG_PATH, `${WG_INTERFACE}.json`), 'utf8');
         config = JSON.parse(config);
         log('Configuration loaded.');
-      } catch (err) {
+      } catch {
         let privateKey = await Util.exec('wg genkey');
         let publicKey;
         if (privateKey) {
@@ -235,7 +235,7 @@ ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''}AllowedIP
         const [
           publicKey,
           preSharedKey, // eslint-disable-line no-unused-vars
-          endpoint, // eslint-disable-line no-unused-vars
+          endpoint,
           allowedIps, // eslint-disable-line no-unused-vars
           latestHandshakeAt,
           transferRx,
