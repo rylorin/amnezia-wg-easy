@@ -28,16 +28,21 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-          cache: 'yarn' # caches the yarn cache folder not node_modules
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Prepare Yarn
+        run: corepack prepare yarn@4.19.0 --activate
 
       - name: Install dependencies
-        run: yarn install --immutable
+        run: corepack yarn install --immutable
 
       - name: Build project
-        run: yarn build
+        run: corepack yarn build
 
       # - name: Test
-      #   run: yarn test
+      #   run: corepack yarn test
 
       # Automated Version Bump
       - name: 'Automated Version Bump'
