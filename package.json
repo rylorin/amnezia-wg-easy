@@ -26,7 +26,8 @@
     "docker-serve": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
     "docker-sudostart": "sudo docker run --env WG_HOST=0.0.0.0 --name wg-easy --cap-add=NET_ADMIN --cap-add=SYS_MODULE --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" --mount type=bind,source=\"$(pwd)\"/config,target=/etc/wireguard -p 51820:51820/udp -p 51821:51821/tcp wg-easy",
     "docker-start": "docker run --env WG_HOST=0.0.0.0 --name wg-easy --cap-add=NET_ADMIN --cap-add=SYS_MODULE --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" --mount type=bind,source=\"$(pwd)\"/config,target=/etc/wireguard -p 51820:51820/udp -p 51821:51821/tcp wg-easy",
-    "wgpw": "NODE_ENV=development node src/wgpw.mjs"
+    "wgpw": "NODE_ENV=development node src/wgpw.mjs",
+    "outdated": "yarn upgrade-interactive"
   },
   "nodemonConfig": {
     "ignore": [
@@ -36,22 +37,22 @@
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "crc-32": "^1.2.2",
-    "debug": "^4.3.7",
+    "debug": "^4.4.3",
     "dotenv": "^17.4.2",
-    "h3": "2.0.1-rc.26",
+    "h3": "2.0.8",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@tailwindcss/forms": "^0.5.9",
-    "eslint": "^10.10.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.6",
-    "nodemon": "^3.1.4",
-    "prettier": "^3.9.6",
-    "tailwindcss": "^3.4.10",
+    "@tailwindcss/forms": "^0.5.11",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.9",
+    "eslint-plugin-prettier": "^5.5.7",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.10.1",
+    "tailwindcss": "^3.4.19",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.70.0"
+    "typescript-eslint": "^8.74.0"
   },
   "resolutions": {
     "srvx": "0.12.4"
