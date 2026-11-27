@@ -14,7 +14,7 @@ on:
       - '.github/workflows/deploy-dockerhub.yml'
       - 'Dockerfile'
   schedule:
-    - cron: '0 3 * * 0' # Runs at 03:00 AM (UTC) every Sunday
+    - cron: '0 3 1 * *' # Runs at 03:00 AM (UTC) on the 1st of every month
 
 jobs:
   deploy:
